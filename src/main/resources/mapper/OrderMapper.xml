@@ -28,5 +28,11 @@
                    #{userId}
                )
     </insert>
+    <select id="selectPage" resultType="OrderDO">
+        select
+        <include refid="FIELDS"/>
+        from orders
+        limit #{offset},#{limit}
+    </select>
 
 </mapper>

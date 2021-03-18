@@ -34,4 +34,12 @@ public interface OrderMapper {
      * @param order order
      */
     void insert(OrderDO order);
+
+    /**
+     * page get
+     * @param offset offset
+     * @param limit limit
+     * @return obj
+     */
+    List<OrderDO> selectPage(@Param("offset")Integer offset,@Param("limit")Integer limit);
 }
