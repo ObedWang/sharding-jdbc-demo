@@ -1,0 +1,83 @@
+spring:
+  # ShardingSphere 配置项
+  shardingsphere:
+    datasource:
+      names: ds0,ds0-slave-1,ds0-slave-2,ds1,ds1-slave-1,ds1-slave-2
+      ds0:
+        type: com.zaxxer.hikari.HikariDataSource # 使用 Hikari 数据库连接池
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/lab18_orders_0?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: root
+      ds0-slave-1:
+        type: com.zaxxer.hikari.HikariDataSource # 使用 Hikari 数据库连接池
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/slave_orders_0_01?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: root
+      ds0-slave-2:
+        type: com.zaxxer.hikari.HikariDataSource # 使用 Hikari 数据库连接池
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/slave_orders_0_02?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: root
+      ds1:
+        type: com.zaxxer.hikari.HikariDataSource # 使用 Hikari 数据库连接池
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/lab18_orders_1?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: root
+      ds1-slave-2:
+        type: com.zaxxer.hikari.HikariDataSource # 使用 Hikari 数据库连接池
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/slave_orders_1_02?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: root
+      ds1-slave-1:
+        type: com.zaxxer.hikari.HikariDataSource # 使用 Hikari 数据库连接池
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://127.0.0.1:3306/slave_orders_1_01?useSSL=false&useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: root
+        # 读写分离配置，对应 YamlMasterSlaveRuleConfiguration 配置类
+    # 分片规则
+    sharding:
+      tables:
+        # orders 表配置
+        orders:
+          actualDataNodes: ms_ds0.orders_$->{[0,2,4,6]},ms_ds1.orders_$->{[1,3,5,7]} # 映射到 ms_ds0 和 ms_ds1 数据源的 orders 表们
+          key-generator: # 主键生成策略
+            column: id
+            type: SNOWFLAKE
+          database-strategy:
+            inline:
+              algorithm-expression: ms_ds$->{user_id % 2}
+              sharding-column: user_id
+          table-strategy:
+            inline:
+              algorithm-expression: orders_$->{user_id % 8}
+              sharding-column: user_id
+        # order_config 表配置
+        order_config:
+          actualDataNodes: ms_ds0.order_config # 仅映射到 ds-orders-0 数据源的 order_config 表
+#      主从配置
+      master-slave-rules:
+        ms_ds0:
+          masterDataSourceName: ds0
+          slaveDataSourceNames:
+            - ds0-slave-1
+            - ds0-slave-2
+          loadBalanceAlgorithmType: ROUND_ROBIN
+        ms_ds1:
+          masterDataSourceName: ds1
+          slaveDataSourceNames: ds1-slave-1,ds1-slave-2
+          loadBalanceAlgorithmType: ROUND_ROBIN
+    # 拓展属性配置
+    props:
+      sql:
+        show: true # 打印 SQL
+# mybatis 配置内容
+mybatis:
+  config-location: classpath:mybatis-config.xml # 配置 MyBatis 配置文件路径
+  mapper-locations: classpath:mapper/*.xml # 配置 Mapper XML 地址
+  type-aliases-package: cn.web.sharding.jdbc.demo.model # 配置数据库实体包路径
